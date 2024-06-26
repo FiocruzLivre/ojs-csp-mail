@@ -14,6 +14,12 @@ namespace APP\plugins\generic\cspMail;
 
 use Illuminate\Events\Dispatcher;
 use PKP\observers\events\MessageSendingFromContext;
+use APP\facades\Repo;
+use PKP\mail\Mailable;
+use Illuminate\Support\Facades\Mail;
+use PKP\mail\mailables\RevisedVersionNotify;
+use PKP\db\DAORegistry;
+use APP\core\Application;
 
 class MailChange
 {
@@ -27,22 +33,41 @@ class MailChange
 
     public function handle(MessageSendingFromContext $event)
     {
-        $body = $event->message->getTextBody();
-        $event->message->setBody($body);
-        // if (!is_a($event->decisionType, SendToProduction::class)) {
-        //     return;
-        // }
+        $request = Application::get()->getRequest();
+        $message = $event->message;
+        $data = $event->data;
+        $context = $event->context;
+        $to = $message->getTo();
+        $subject = $message->getSubject();
+        $recipients = [];
+        $submission = Repo::submission()->get((int) $request->getUservar('submissionId'));
+        $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+        $assignedEditorIds = $stageAssignmentDao->getEditorsAssignedToStage($data["submissionId"], $submission->getData('stageId'));
+        $i = 0;
+        $editors = [3, 5]; // Ed. Chefe e Ed. Associado
+        foreach ($to as $t) {
+            $email = $t->getAddress();
+            $recipients[] = $email;
+            $x = $assignedEditorIds[$i]->getData('userGroupId');
+            if (in_array($assignedEditorIds[$i]->getData('userGroupId'), $editors)) {
+                if (($subject == "Envio de versão atualizada")) {
+                    array_pop($recipients);
+                    $skipMail = true;
+                }
+            }
+            $i++;
+        }
+        if ($skipMail) {
+            $mailable = new Mailable();
+            $template = Repo::emailTemplate()->getByKey($context->getId(), RevisedVersionNotify::getEmailTemplateKey());
+            $mailable->body($template->getLocalizedData('body'))
+                ->subject($template->getLocalizedData('subject'))
+                ->from($context->getData('contactEmail'))
+                ->to($recipients);
 
-        // $submissionFiles = Repo::submissionFile()
-        //     ->getCollector()
-        //     ->filterBySubmissionIds([$event->submission->getId()])
-        //     ->filterByFileStages([
-        //         SubmissionFile::SUBMISSION_FILE_PRODUCTION_READY,
-        //     ])
-        //     ->getMany();
+            Mail::send($mailable);
 
-        // if ($submissionFiles->count()) {
-        //     // Send files to third-party service.
-        // }
+            return false;
+        }
     }
 }
