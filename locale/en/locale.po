@@ -12,5 +12,5 @@ msgstr ""
 msgid "plugins.generic.cspMail.displayName"
 msgstr "Email CSP"
 
-msgid "plugins.generic.cspWorkflow.description"
+msgid "plugins.generic.cspMail.description"
 msgstr "Customizes the OJS email sending according to the Cadernos de Saúde Pública of Fiocruz."
