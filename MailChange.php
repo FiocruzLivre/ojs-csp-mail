@@ -33,6 +33,7 @@ class MailChange
 
     public function handle(MessageSendingFromContext $event)
     {
+        // Remove envio de email de notificação para editores quando autor faz submissão de nova versão
         $request = Application::get()->getRequest();
         $message = $event->message;
         $data = $event->data;
@@ -64,7 +65,6 @@ class MailChange
                 ->subject($template->getLocalizedData('subject'))
                 ->from($context->getData('contactEmail'))
                 ->to($recipients);
-
             Mail::send($mailable);
 
             return false;
