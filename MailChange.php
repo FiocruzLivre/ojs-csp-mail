@@ -44,14 +44,14 @@ class MailChange
         $submission = Repo::submission()->get((int) $request->getUservar('submissionId'));
         $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
         $assignedEditorIds = $stageAssignmentDao->getEditorsAssignedToStage($data["submissionId"], $submission->getData('stageId'));
+        $templateRevisedVersionNotify = Repo::emailTemplate()->getByKey($context->getId(), RevisedVersionNotify::getEmailTemplateKey());
         $i = 0;
         $editors = [3, 5]; // Ed. Chefe e Ed. Associado
         foreach ($to as $t) {
             $email = $t->getAddress();
             $recipients[] = $email;
-            $x = $assignedEditorIds[$i]->getData('userGroupId');
             if (in_array($assignedEditorIds[$i]->getData('userGroupId'), $editors)) {
-                if (($subject == "Envio de versão atualizada")) {
+                if (($templateRevisedVersionNotify->getLocalizedData("subject") == $subject)) {
                     array_pop($recipients);
                     $skipMail = true;
                 }
@@ -60,9 +60,8 @@ class MailChange
         }
         if ($skipMail) {
             $mailable = new Mailable();
-            $template = Repo::emailTemplate()->getByKey($context->getId(), RevisedVersionNotify::getEmailTemplateKey());
-            $mailable->body($template->getLocalizedData('body'))
-                ->subject($template->getLocalizedData('subject'))
+            $mailable->body($templateRevisedVersionNotify->getLocalizedData('body'))
+                ->subject($templateRevisedVersionNotify->getLocalizedData('subject'))
                 ->from($context->getData('contactEmail'))
                 ->to($recipients);
             Mail::send($mailable);
