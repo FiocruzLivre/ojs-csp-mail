@@ -18,6 +18,7 @@ use APP\facades\Repo;
 use PKP\mail\Mailable;
 use Illuminate\Support\Facades\Mail;
 use PKP\mail\mailables\RevisedVersionNotify;
+use PKP\mail\mailables\SubmissionNeedsEditor;
 use PKP\db\DAORegistry;
 use APP\core\Application;
 
@@ -45,23 +46,29 @@ class MailChange
         $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
         $assignedEditorIds = $stageAssignmentDao->getEditorsAssignedToStage($data["submissionId"], $submission->getData('stageId'));
         $templateRevisedVersionNotify = Repo::emailTemplate()->getByKey($context->getId(), RevisedVersionNotify::getEmailTemplateKey());
-        $i = 0;
-        $editors = [3, 5]; // Ed. Chefe e Ed. Associado
-        foreach ($to as $t) {
-            $email = $t->getAddress();
-            $recipients[] = $email;
-            if (in_array($assignedEditorIds[$i]->getData('userGroupId'), $editors)) {
-                if (($templateRevisedVersionNotify->getLocalizedData("subject") == $subject)) {
-                    array_pop($recipients);
-                    $skipMail = true;
+        $templateSubmissionNeedsEditor = Repo::emailTemplate()->getByKey($context->getId(), SubmissionNeedsEditor::getEmailTemplateKey());
+        if($templateRevisedVersionNotify->getLocalizedData("subject") == $subject){
+            $template = $templateRevisedVersionNotify;
+            $editors = [3, 5]; // Ed. Chefe, Ed. Associado
+            $i = 0;
+            foreach ($to as $t) {
+                $email = $t->getAddress();
+                $recipients[] = $email;
+                if (in_array($assignedEditorIds[$i]->getData('userGroupId'), $editors)) {
+                        array_pop($recipients);
+                        $skipMail = true;
                 }
+                $i++;
             }
-            $i++;
+        }
+        // Remove envio de email para editores e gerentes da revista, quando uma nova submissão é finalizada.
+        if ($templateSubmissionNeedsEditor->getLocalizedData("subject") == $subject) {
+            return false;
         }
         if ($skipMail) {
             $mailable = new Mailable();
-            $mailable->body($templateRevisedVersionNotify->getLocalizedData('body'))
-                ->subject($templateRevisedVersionNotify->getLocalizedData('subject'))
+            $mailable->body($template->getLocalizedData('body'))
+                ->subject($template->getLocalizedData('subject'))
                 ->from($context->getData('contactEmail'))
                 ->to($recipients);
             Mail::send($mailable);
