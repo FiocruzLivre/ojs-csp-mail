@@ -63,10 +63,6 @@ class MailChange
                 $i++;
             }
         }
-        // Remove envio de email para editores e gerentes da revista, quando uma nova submissão é finalizada.
-        if ($templateSubmissionNeedsEditor->getLocalizedData("subject") == $subject) {
-            return false;
-        }
         // Remove envio de email para editores e secretaria, quando uma avaliação é concluída.
         if ($templateReviewCompleteNotifyEditors->getLocalizedData("subject") == $subject) {
             $template = $templateReviewCompleteNotifyEditors;
