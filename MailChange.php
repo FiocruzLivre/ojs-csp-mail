@@ -35,8 +35,8 @@ class MailChange
 
     public function handle(MessageSendingFromContext $event)
     {
+        if ($event->data["submissionId"]) {
         // Remove envio de email de notificação para editores quando autor faz submissão de nova versão
-        $request = Application::get()->getRequest();
         $message = $event->message;
         $data = $event->data;
         $context = $event->context;
@@ -45,7 +45,6 @@ class MailChange
         $recipients = [];
         $submission = Repo::submission()->get((int) $data["submissionId"]);
         $templateRevisedVersionNotify = Repo::emailTemplate()->getByKey($context->getId(), RevisedVersionNotify::getEmailTemplateKey());
-        $templateSubmissionNeedsEditor = Repo::emailTemplate()->getByKey($context->getId(), SubmissionNeedsEditor::getEmailTemplateKey());
         $templateReviewCompleteNotifyEditors = Repo::emailTemplate()->getByKey($context->getId(), ReviewCompleteNotifyEditors::getEmailTemplateKey());
         if($templateRevisedVersionNotify->getLocalizedData("subject") == $subject){
             $template = $templateRevisedVersionNotify;
@@ -61,6 +60,9 @@ class MailChange
                         $skipMail = true;
                 }
                 $i++;
+            }
+            if(empty($recipients)){
+                return false;
             }
         }
         // Remove envio de email para editores e secretaria, quando uma avaliação é concluída.
@@ -80,9 +82,9 @@ class MailChange
                     }
                 }
             }
-        }
-        if(empty($recipients)){
-            return false;
+            if(empty($recipients)){
+                return false;
+            }
         }
         if ($skipMail) {
             $mailable = new Mailable();
@@ -94,5 +96,7 @@ class MailChange
 
             return false;
         }
+        }
+
     }
 }
