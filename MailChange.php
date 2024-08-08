@@ -18,10 +18,8 @@ use APP\facades\Repo;
 use PKP\mail\Mailable;
 use Illuminate\Support\Facades\Mail;
 use PKP\mail\mailables\RevisedVersionNotify;
-use PKP\mail\mailables\SubmissionNeedsEditor;
 use PKP\mail\mailables\ReviewCompleteNotifyEditors;
 use PKP\db\DAORegistry;
-use APP\core\Application;
 
 class MailChange
 {
