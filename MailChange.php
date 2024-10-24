@@ -33,6 +33,8 @@ class MailChange
 
     public function handle(MessageSendingFromContext $event)
     {
+        if ($event->data["submissionId"]) {
+        // Substitui a variável $submissionIdCSP pelo ID do CSP
         $submissionId = $event->data["submissionId"];
         $publication = Repo::publication()->get((int) $submissionId);
         $message = $event->message;
@@ -40,7 +42,6 @@ class MailChange
         $newHtmlBody = str_replace('{$submissionIdCSP}',$publication->getData('submissionIdCSP'),$htmlBody);
         $symfonyMessage = $event->data["message"]->getSymfonyMessage();
         $symfonyMessage->html($newHtmlBody);
-        if ($event->data["submissionId"]) {
         // Remove envio de email de notificação para editores quando autor faz submissão de nova versão
         $message = $event->message;
         $data = $event->data;
