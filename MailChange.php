@@ -34,75 +34,75 @@ class MailChange
     public function handle(MessageSendingFromContext $event)
     {
         if ($event->data["submissionId"]) {
-        // Substitui a variável $submissionIdCSP pelo ID do CSP
-        $submissionId = $event->data["submissionId"];
-        $publication = Repo::publication()->get((int) $submissionId);
-        $message = $event->message;
-        $htmlBody = $message->getHtmlBody();
-        $newHtmlBody = str_replace('{$submissionIdCSP}',$publication->getData('submissionIdCSP'),$htmlBody);
-        $symfonyMessage = $event->data["message"]->getSymfonyMessage();
-        $symfonyMessage->html($newHtmlBody);
-        // Remove envio de email de notificação para editores quando autor faz submissão de nova versão
-        $message = $event->message;
-        $data = $event->data;
-        $context = $event->context;
-        $to = $message->getTo();
-        $subject = $message->getSubject();
-        $recipients = [];
-        $submission = Repo::submission()->get((int) $data["submissionId"]);
-        $templateRevisedVersionNotify = Repo::emailTemplate()->getByKey($context->getId(), RevisedVersionNotify::getEmailTemplateKey());
-        $templateReviewCompleteNotifyEditors = Repo::emailTemplate()->getByKey($context->getId(), ReviewCompleteNotifyEditors::getEmailTemplateKey());
-        if($templateRevisedVersionNotify->getLocalizedData("subject") == $subject){
-            $template = $templateRevisedVersionNotify;
-            $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
-            $assignedEditorIds = $stageAssignmentDao->getEditorsAssignedToStage($data["submissionId"], $submission->getData('stageId'));
-            $editors = [3, 5]; // Ed. Chefe, Ed. Associado
-            $i = 0;
-            foreach ($to as $t) {
-                $email = $t->getAddress();
-                $recipients[] = $email;
-                if (in_array($assignedEditorIds[$i]->getData('userGroupId'), $editors)) {
-                        array_pop($recipients);
-                        $skipMail = true;
+            // Substitui a variável $submissionIdCSP pelo ID do CSP
+            $submissionId = $event->data["submissionId"];
+            $publication = Repo::publication()->get((int) $submissionId);
+            $message = $event->message;
+            $htmlBody = $message->getHtmlBody();
+            $newHtmlBody = str_replace('{$submissionIdCSP}',$publication->getData('submissionIdCSP'),$htmlBody);
+            $symfonyMessage = $event->data["message"]->getSymfonyMessage();
+            $symfonyMessage->html($newHtmlBody);
+
+            // Remove envio de email de notificação para editores quando autor faz submissão de nova versão
+            $message = $event->message;
+            $data = $event->data;
+            $context = $event->context;
+            $to = $message->getTo();
+            $subject = $message->getSubject();
+            $recipients = [];
+            $submission = Repo::submission()->get((int) $data["submissionId"]);
+            $templateRevisedVersionNotify = Repo::emailTemplate()->getByKey($context->getId(), RevisedVersionNotify::getEmailTemplateKey());
+            $templateReviewCompleteNotifyEditors = Repo::emailTemplate()->getByKey($context->getId(), ReviewCompleteNotifyEditors::getEmailTemplateKey());
+            if($templateRevisedVersionNotify->getLocalizedData("subject") == $subject){
+                $template = $templateRevisedVersionNotify;
+                $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+                $assignedEditorIds = $stageAssignmentDao->getEditorsAssignedToStage($data["submissionId"], $submission->getData('stageId'));
+                $editors = [3, 5]; // Ed. Chefe, Ed. Associado
+                $i = 0;
+                foreach ($to as $t) {
+                    $email = $t->getAddress();
+                    $recipients[] = $email;
+                    if (in_array($assignedEditorIds[$i]->getData('userGroupId'), $editors)) {
+                            array_pop($recipients);
+                            $skipMail = true;
+                    }
+                    $i++;
                 }
-                $i++;
+                if(empty($recipients)){
+                    return false;
+                }
             }
-            if(empty($recipients)){
-                return false;
-            }
-        }
-        // Remove envio de email para editores e secretaria, quando uma avaliação é concluída.
-        if ($templateReviewCompleteNotifyEditors->getLocalizedData("subject") == $subject) {
-            $template = $templateReviewCompleteNotifyEditors;
-            $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
-            $assignedEditorIds = $stageAssignmentDao->getEditorsAssignedToStage($data["submissionId"], $submission->getData('stageId'));
-            $editors = [3, 19]; // Ed. Chefe e Secretaria
-            foreach ($to as $t) {
-                $email = $t->getAddress();
-                $recipients[] = $email;
-                $user = Repo::user()->getByEmail($email, true);
-                foreach ($assignedEditorIds as $assignedEditorId) {
-                    if ($user->getId() == $assignedEditorId->getData('userId') && in_array($assignedEditorId->getData('userGroupId'), $editors)){
-                        array_pop($recipients);
-                        $skipMail = true;
+
+            // Remove envio de email para editores e secretaria, quando uma avaliação é concluída.
+            if ($templateReviewCompleteNotifyEditors->getLocalizedData("subject") == $subject) {
+                $template = $templateReviewCompleteNotifyEditors;
+                $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
+                $assignedEditorIds = $stageAssignmentDao->getEditorsAssignedToStage($data["submissionId"], $submission->getData('stageId'));
+                $editors = [3, 19]; // Ed. Chefe e Secretaria
+                foreach ($to as $t) {
+                    $email = $t->getAddress();
+                    $recipients[] = $email;
+                    $user = Repo::user()->getByEmail($email, true);
+                    foreach ($assignedEditorIds as $assignedEditorId) {
+                        if ($user->getId() == $assignedEditorId->getData('userId') && in_array($assignedEditorId->getData('userGroupId'), $editors)){
+                            array_pop($recipients);
+                            $skipMail = true;
+                        }
                     }
                 }
+                if(empty($recipients)){
+                    return false;
+                }
             }
-            if(empty($recipients)){
+            if ($skipMail) {
+                $mailable = new Mailable();
+                $mailable->body($template->getLocalizedData('body'))
+                    ->subject($template->getLocalizedData('subject'))
+                    ->from($context->getData('contactEmail'))
+                    ->to($recipients);
+                Mail::send($mailable);
                 return false;
             }
         }
-        if ($skipMail) {
-            $mailable = new Mailable();
-            $mailable->body($template->getLocalizedData('body'))
-                ->subject($template->getLocalizedData('subject'))
-                ->from($context->getData('contactEmail'))
-                ->to($recipients);
-            Mail::send($mailable);
-
-            return false;
-        }
-        }
-
     }
 }
