@@ -33,10 +33,11 @@ class MailChange
 
     public function handle(MessageSendingFromContext $event)
     {
+        // Substitui a variável $submissionIdCSP pelo ID do CSP em templates de emails
         if ($event->data["submissionId"]) {
-            // Substitui a variável $submissionIdCSP pelo ID do CSP
             $submissionId = $event->data["submissionId"];
-            $publication = Repo::publication()->get((int) $submissionId);
+            $submission = Repo::submission()->get((int) $submissionId);
+            $publication = Repo::publication()->get((int) $submission->getData('currentPublicationId'));
             $message = $event->message;
             $htmlBody = $message->getHtmlBody();
             $newHtmlBody = str_replace('{$submissionIdCSP}',$publication->getData('submissionIdCSP'),$htmlBody);
