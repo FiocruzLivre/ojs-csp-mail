@@ -14,12 +14,14 @@ namespace APP\plugins\generic\cspMail;
 
 use Illuminate\Events\Dispatcher;
 use PKP\observers\events\MessageSendingFromContext;
+use PKP\observers\events\MessageSendingFromSite;
 use APP\facades\Repo;
 use PKP\mail\Mailable;
 use Illuminate\Support\Facades\Mail;
 use PKP\mail\mailables\RevisedVersionNotify;
 use PKP\mail\mailables\ReviewCompleteNotifyEditors;
 use PKP\db\DAORegistry;
+use APP\core\Application;
 
 class MailChange
 {
@@ -29,10 +31,16 @@ class MailChange
             MessageSendingFromContext::class,
             MailChange::class
         );
+
+        $events->listen(
+            MessageSendingFromSite::class,
+            MailChange::class
+        );
     }
 
-    public function handle(MessageSendingFromContext $event)
+    public function handle(MessageSendingFromContext|MessageSendingFromSite $event)
     {
+        $x = 1;
         // Substitui a variável $submissionIdCSP pelo ID do CSP em templates de emails
         if ($event->data["submissionId"]) {
             $submissionId = $event->data["submissionId"];
@@ -43,11 +51,11 @@ class MailChange
             $newHtmlBody = str_replace('{$submissionIdCSP}',$publication->getData('submissionIdCSP'),$htmlBody);
             $symfonyMessage = $event->data["message"]->getSymfonyMessage();
             $symfonyMessage->html($newHtmlBody);
-
+            $request = Application::get()->getRequest();
+            $context = $request->getContext();
             // Remove envio de email de notificação para editores quando autor faz submissão de nova versão
             $message = $event->message;
             $data = $event->data;
-            $context = $event->context;
             $to = $message->getTo();
             $subject = $message->getSubject();
             $recipients = [];
@@ -95,11 +103,13 @@ class MailChange
                     return false;
                 }
             }
+            // $event->message->addCc('contato@fiocruz.br');
             if ($skipMail) {
                 $mailable = new Mailable();
                 $mailable->body($template->getLocalizedData('body'))
                     ->subject($template->getLocalizedData('subject'))
                     ->from($context->getData('contactEmail'))
+                    // ->addCc('contato@fiocruz.br');
                     ->to($recipients);
                 Mail::send($mailable);
                 return false;
