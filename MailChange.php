@@ -66,7 +66,7 @@ class MailChange
                 $template = $templateRevisedVersionNotify;
                 $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
                 $assignedEditorIds = $stageAssignmentDao->getEditorsAssignedToStage($data["submissionId"], $submission->getData('stageId'));
-                $editors = [3, 5]; // Ed. Chefe, Ed. Associado
+                $editors = [3, 5, 6]; // Ed. Chefe, Ed. Associado
                 $i = 0;
                 foreach ($to as $t) {
                     $email = $t->getAddress();
