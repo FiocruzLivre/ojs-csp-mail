@@ -40,7 +40,6 @@ class MailChange
 
     public function handle(MessageSendingFromContext|MessageSendingFromSite $event)
     {
-        $x = 1;
         // Substitui a variável $submissionIdCSP pelo ID do CSP em templates de emails
         if ($event->data["submissionId"]) {
             $submissionId = $event->data["submissionId"];
@@ -103,13 +102,15 @@ class MailChange
                     return false;
                 }
             }
-            // $event->message->addCc('contato@fiocruz.br');
+            $event->message->addCc('contato@fiocruz.br');
+            $event->message->addCc('livia.carolina@fiocruz.br');
             if ($skipMail) {
                 $mailable = new Mailable();
                 $mailable->body($template->getLocalizedData('body'))
                     ->subject($template->getLocalizedData('subject'))
                     ->from($context->getData('contactEmail'))
-                    // ->addCc('contato@fiocruz.br');
+                    ->addCc('contato@fiocruz.br')
+                    ->addCc('livia.carolina@fiocruz.br')
                     ->to($recipients);
                 Mail::send($mailable);
                 return false;
