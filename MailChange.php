@@ -40,8 +40,8 @@ class MailChange
 
     public function handle(MessageSendingFromContext|MessageSendingFromSite $event)
     {
-        // Substitui a variável $submissionIdCSP pelo ID do CSP em templates de emails
         if ($event->data["submissionId"]) {
+            // Substitui a variável $submissionIdCSP pelo ID do CSP em templates de emails
             $submissionId = $event->data["submissionId"];
             $submission = Repo::submission()->get((int) $submissionId);
             $publication = Repo::publication()->get((int) $submission->getData('currentPublicationId'));
@@ -108,10 +108,20 @@ class MailChange
                 $mailable = new Mailable();
                 $mailable->body($template->getLocalizedData('body'))
                     ->subject($template->getLocalizedData('subject'))
-                    ->from($context->getData('contactEmail'))
-                    ->addCc('contato@fiocruz.br')
-                    ->addCc('livia.carolina@fiocruz.br')
-                    ->to($recipients);
+                    ->from('cadernos@fiocruz.br')
+                    ->to($recipients)
+                    ->cc('contato@fiocruz.br')
+                    ->cc('livia.carolina@fiocruz.br');
+                Mail::send($mailable);
+                return false;
+            }else{
+                $mailable = new Mailable();
+                $mailable->body($event->message->getHtmlBody())
+                    ->subject($event->message->getSubject())
+                    ->from('cadernos@fiocruz.br')
+                    ->to($event->message->getTo())
+                    ->cc('contato@fiocruz.br')
+                    ->cc('livia.carolina@fiocruz.br');
                 Mail::send($mailable);
                 return false;
             }
