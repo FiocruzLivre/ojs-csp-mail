@@ -103,15 +103,13 @@ class MailChange
                 }
             }
             $event->message->addCc('cadernos@fiocruz.br');
-            $event->message->addCc('livia.carolina@fiocruz.br');
             if ($skipMail) {
                 $mailable = new Mailable();
                 $mailable->body($template->getLocalizedData('body'))
                     ->subject($template->getLocalizedData('subject'))
                     ->from('cadernos@fiocruz.br')
                     ->to($recipients)
-                    ->cc('cadernos@fiocruz.br')
-                    ->cc('livia.carolina@fiocruz.br');
+                    ->cc('cadernos@fiocruz.br');
                 Mail::send($mailable);
                 return false;
             }else{
@@ -120,8 +118,7 @@ class MailChange
                     ->subject($event->message->getSubject())
                     ->from('cadernos@fiocruz.br')
                     ->to($event->message->getTo())
-                    ->cc('cadernos@fiocruz.br')
-                    ->cc('livia.carolina@fiocruz.br');
+                    ->cc('cadernos@fiocruz.br');
                 Mail::send($mailable);
                 return false;
             }
