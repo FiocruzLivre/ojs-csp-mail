@@ -106,7 +106,7 @@ class MailChange
             if ($skipMail) {
                 $mailable = new Mailable();
                 $mailable->body($template->getLocalizedData('body'))
-                    ->subject($template->getLocalizedData('subject'))
+                    ->subject($template->getLocalizedData('subject').' - CSP '.$publication->getData('submissionIdCSP'))
                     ->from('cadernos@fiocruz.br')
                     ->to($recipients)
                     ->cc('cadernos@fiocruz.br');
@@ -115,7 +115,7 @@ class MailChange
             }else{
                 $mailable = new Mailable();
                 $mailable->body($event->message->getHtmlBody())
-                    ->subject($event->message->getSubject())
+                    ->subject($event->message->getSubject().' - CSP '.$publication->getData('submissionIdCSP'))
                     ->from('cadernos@fiocruz.br')
                     ->to($event->message->getTo())
                     ->cc('cadernos@fiocruz.br');
