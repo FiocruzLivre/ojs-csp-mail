@@ -8,5 +8,9 @@ Plugin to customize the email sending in Open Journal System (OJS) according to 
 
 ## Installation
 
-- Clone this repo: ``https://github.com/liviacarolgouvea/ojs-csp-mail.git cspMail`` inside the directory ``ojs/plugins/generic/`` 
-- Enable the plugin in _Website > Plugins_ area
+1) Clone this repo inside the directory ``ojs/plugins/generic/`` :
+
+   ``git clone https://github.com/FiocruzLivre/ojs-csp-mail.git cspMail``
+
+    > The plugin must be inside a _cspMail_ named folder
+2) In the system, enable the plugin in _Website > Plugins_ area
