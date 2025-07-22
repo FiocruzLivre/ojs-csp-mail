@@ -102,23 +102,23 @@ class MailChange
                     return false;
                 }
             }
-            $event->message->addCc('cadernos@fiocruz.br');
+            $event->message->addCc($context->getData('contactEmail'));
             if ($skipMail) {
                 $mailable = new Mailable();
                 $mailable->body($template->getLocalizedData('body'))
                     ->subject($template->getLocalizedData('subject').' - CSP '.$publication->getData('submissionIdCSP'))
-                    ->from('cadernos@fiocruz.br')
+                    ->from($context->getData('contactEmail'))
                     ->to($recipients)
-                    ->cc('cadernos@fiocruz.br');
+                    ->cc($context->getData('contactEmail'));
                 Mail::send($mailable);
                 return false;
             }else{
                 $mailable = new Mailable();
                 $mailable->body($event->message->getHtmlBody())
                     ->subject($event->message->getSubject().' - CSP '.$publication->getData('submissionIdCSP'))
-                    ->from('cadernos@fiocruz.br')
+                    ->from($context->getData('contactEmail'))
                     ->to($event->message->getTo())
-                    ->cc('cadernos@fiocruz.br');
+                    ->cc($context->getData('contactEmail'));
                 Mail::send($mailable);
                 return false;
             }
