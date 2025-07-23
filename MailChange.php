@@ -102,22 +102,23 @@ class MailChange
                     return false;
                 }
             }
+            $event->message->addCc($context->getData('supportEmail'));
             if ($skipMail) {
                 $mailable = new Mailable();
                 $mailable->body($template->getLocalizedData('body'))
                     ->subject($template->getLocalizedData('subject').' - CSP '.$publication->getData('submissionIdCSP'))
-                    ->from($event->message->getFrom())
+                    ->from($context->getData('supportEmail'))
                     ->to($recipients)
-                    ->cc($event->message->getFrom());
+                    ->cc($context->getData('supportEmail'));
                 Mail::send($mailable);
                 return false;
             }else{
                 $mailable = new Mailable();
                 $mailable->body($event->message->getHtmlBody())
                     ->subject($event->message->getSubject().' - CSP '.$publication->getData('submissionIdCSP'))
-                    ->from($event->message->getFrom())
+                    ->from($context->getData('supportEmail'))
                     ->to($event->message->getTo())
-                    ->cc($event->message->getFrom());
+                    ->cc($context->getData('supportEmail'));
                 Mail::send($mailable);
                 return false;
             }
