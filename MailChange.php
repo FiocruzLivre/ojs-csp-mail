@@ -107,7 +107,7 @@ class MailChange
                 $mailable = new Mailable();
                 $mailable->body($template->getLocalizedData('body'))
                     ->subject($template->getLocalizedData('subject').' - CSP '.$publication->getData('submissionIdCSP'))
-                    ->from($context->getData('contactEmail'))
+                    ->from($event->message->getFrom())
                     ->to($recipients)
                     ->cc($context->getData('supportEmail'));
                 Mail::send($mailable);
@@ -116,7 +116,7 @@ class MailChange
                 $mailable = new Mailable();
                 $mailable->body($event->message->getHtmlBody())
                     ->subject($event->message->getSubject().' - CSP '.$publication->getData('submissionIdCSP'))
-                    ->from($context->getData('contactEmail'))
+                    ->from($event->message->getFrom())
                     ->to($event->message->getTo())
                     ->cc($context->getData('supportEmail'));
                 Mail::send($mailable);
