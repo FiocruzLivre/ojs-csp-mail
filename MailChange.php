@@ -102,14 +102,13 @@ class MailChange
                     return false;
                 }
             }
-            $event->message->addCc($context->getData('contactEmail'));
             if ($skipMail) {
                 $mailable = new Mailable();
                 $mailable->body($template->getLocalizedData('body'))
                     ->subject($template->getLocalizedData('subject').' - CSP '.$publication->getData('submissionIdCSP'))
                     ->from($event->message->getFrom())
                     ->to($recipients)
-                    ->cc($context->getData('contactEmail'));
+                    ->cc($event->message->getFrom());
                 Mail::send($mailable);
                 return false;
             }else{
@@ -118,7 +117,7 @@ class MailChange
                     ->subject($event->message->getSubject().' - CSP '.$publication->getData('submissionIdCSP'))
                     ->from($event->message->getFrom())
                     ->to($event->message->getTo())
-                    ->cc($context->getData('contactEmail'));
+                    ->cc($event->message->getFrom());
                 Mail::send($mailable);
                 return false;
             }
