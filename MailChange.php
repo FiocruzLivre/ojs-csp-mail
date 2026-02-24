@@ -48,8 +48,6 @@ class MailChange
             $message = $event->message;
             $htmlBody = $message->getHtmlBody();
             $newHtmlBody = str_replace('{$submissionIdCSP}',$publication->getData('submissionIdCSP'),$htmlBody);
-            $symfonyMessage = $event->data["message"]->getSymfonyMessage();
-            $symfonyMessage->html($newHtmlBody);
             $request = Application::get()->getRequest();
             $context = $request->getContext();
             // Remove envio de email de notificação para editores quando autor faz submissão de nova versão
@@ -114,13 +112,23 @@ class MailChange
                 return false;
             }else{
                 $mailable = new Mailable();
-                $mailable->body($event->message->getHtmlBody())
+                $mailable->body($newHtmlBody)
                     ->subject($event->message->getSubject().' - CSP '.$publication->getData('submissionIdCSP'))
                     ->from($event->message->getFrom())
                     ->to($event->message->getTo())
                     ->cc($context->getData('supportEmail'));
                 Mail::send($mailable);
                 return false;
+            }
+        }
+        $newTextBody = strip_tags($newHtmlBody);
+        if (method_exists($event->message, 'text')) {
+            $event->message->text($newTextBody);
+        }
+        if (!empty($event->data['message'])) {
+            $symfonyMessage = $event->data['message']->getSymfonyMessage();
+            if (method_exists($symfonyMessage, 'text')) {
+                $symfonyMessage->text($newTextBody);
             }
         }
     }
