@@ -78,28 +78,6 @@ class MailChange
                     return false;
                 }
             }
-
-            // Remove envio de email para editores e secretaria, quando uma avaliação é concluída.
-            if ($templateReviewCompleteNotifyEditors->getLocalizedData("subject") == $subject) {
-                $template = $templateReviewCompleteNotifyEditors;
-                $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
-                $assignedEditorIds = $stageAssignmentDao->getEditorsAssignedToStage($data["submissionId"], $submission->getData('stageId'));
-                $editors = [3, 19]; // Ed. Chefe e Secretaria
-                foreach ($to as $t) {
-                    $email = $t->getAddress();
-                    $recipients[] = $email;
-                    $user = Repo::user()->getByEmail($email, true);
-                    foreach ($assignedEditorIds as $assignedEditorId) {
-                        if ($user->getId() == $assignedEditorId->getData('userId') && in_array($assignedEditorId->getData('userGroupId'), $editors)){
-                            array_pop($recipients);
-                            $skipMail = true;
-                        }
-                    }
-                }
-                if(empty($recipients)){
-                    return false;
-                }
-            }
             $event->message->addCc($context->getData('supportEmail'));
             if ($skipMail) {
                 $mailable = new Mailable();
