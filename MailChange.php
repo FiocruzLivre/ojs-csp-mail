@@ -20,8 +20,9 @@ use PKP\mail\Mailable;
 use Illuminate\Support\Facades\Mail;
 use PKP\mail\mailables\RevisedVersionNotify;
 use PKP\mail\mailables\ReviewCompleteNotifyEditors;
-use PKP\db\DAORegistry;
 use APP\core\Application;
+use PKP\security\Role;
+use PKP\stageAssignment\StageAssignment;
 
 class MailChange
 {
@@ -61,18 +62,23 @@ class MailChange
             $templateReviewCompleteNotifyEditors = Repo::emailTemplate()->getByKey($context->getId(), ReviewCompleteNotifyEditors::getEmailTemplateKey());
             if($templateRevisedVersionNotify->getLocalizedData("subject") == $subject){
                 $template = $templateRevisedVersionNotify;
-                $stageAssignmentDao = DAORegistry::getDAO('StageAssignmentDAO');
-                $assignedEditorIds = $stageAssignmentDao->getEditorsAssignedToStage($data["submissionId"], $submission->getData('stageId'));
+                $assignedEditorIds = StageAssignment::withSubmissionIds([$data["submissionId"]])
+                    ->withStageIds([$submission->getData('stageId')])
+                    ->withRoleIds([Role::ROLE_ID_MANAGER, Role::ROLE_ID_SUB_EDITOR])
+                    ->get();
                 $editors = [3, 5, 6]; // Ed. Chefe, Ed. Associado
-                $i = 0;
+                $assignedEditorUserIds = $assignedEditorIds
+                    ->filter(fn ($a) => in_array($a->userGroupId, $editors))
+                    ->pluck('userId')
+                    ->all();
                 foreach ($to as $t) {
                     $email = $t->getAddress();
                     $recipients[] = $email;
-                    if (in_array($assignedEditorIds[$i]->getData('userGroupId'), $editors)) {
-                            array_pop($recipients);
-                            $skipMail = true;
+                    $recipientUser = Repo::user()->getByEmail($email, true);
+                    if ($recipientUser && in_array($recipientUser->getId(), $assignedEditorUserIds)) {
+                        array_pop($recipients);
+                        $skipMail = true;
                     }
-                    $i++;
                 }
                 if(empty($recipients)){
                     return false;
