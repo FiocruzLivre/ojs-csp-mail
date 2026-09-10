@@ -19,7 +19,6 @@ use APP\facades\Repo;
 use PKP\mail\Mailable;
 use Illuminate\Support\Facades\Mail;
 use PKP\mail\mailables\RevisedVersionNotify;
-use PKP\mail\mailables\ReviewCompleteNotifyEditors;
 use APP\core\Application;
 use PKP\security\Role;
 use PKP\stageAssignment\StageAssignment;
@@ -52,17 +51,13 @@ class MailChange
             $request = Application::get()->getRequest();
             $context = $request->getContext();
             // Remove envio de email de notificação para editores quando autor faz submissão de nova versão
-            $message = $event->message;
-            $data = $event->data;
             $to = $message->getTo();
             $subject = $message->getSubject();
             $recipients = [];
-            $submission = Repo::submission()->get((int) $data["submissionId"]);
             $templateRevisedVersionNotify = Repo::emailTemplate()->getByKey($context->getId(), RevisedVersionNotify::getEmailTemplateKey());
-            $templateReviewCompleteNotifyEditors = Repo::emailTemplate()->getByKey($context->getId(), ReviewCompleteNotifyEditors::getEmailTemplateKey());
             if($templateRevisedVersionNotify->getLocalizedData("subject") == $subject){
                 $template = $templateRevisedVersionNotify;
-                $assignedEditorIds = StageAssignment::withSubmissionIds([$data["submissionId"]])
+                $assignedEditorIds = StageAssignment::withSubmissionIds([$submissionId])
                     ->withStageIds([$submission->getData('stageId')])
                     ->withRoleIds([Role::ROLE_ID_MANAGER, Role::ROLE_ID_SUB_EDITOR])
                     ->get();
@@ -88,6 +83,7 @@ class MailChange
             if ($skipMail) {
                 $mailable = new Mailable();
                 $mailable->body($template->getLocalizedData('body'))
+                // Inclui submissionIdCSP no assunto do email
                     ->subject($template->getLocalizedData('subject').' - CSP '.$publication->getData('submissionIdCSP'))
                     ->from($event->message->getFrom())
                     ->to($recipients)
@@ -97,22 +93,13 @@ class MailChange
             }else{
                 $mailable = new Mailable();
                 $mailable->body($newHtmlBody)
+                // Inclui submissionIdCSP no assunto do email
                     ->subject($event->message->getSubject().' - CSP '.$publication->getData('submissionIdCSP'))
                     ->from($event->message->getFrom())
                     ->to($event->message->getTo())
                     ->cc($context->getData('supportEmail'));
                 Mail::send($mailable);
                 return false;
-            }
-        }
-        $newTextBody = strip_tags($newHtmlBody);
-        if (method_exists($event->message, 'text')) {
-            $event->message->text($newTextBody);
-        }
-        if (!empty($event->data['message'])) {
-            $symfonyMessage = $event->data['message']->getSymfonyMessage();
-            if (method_exists($symfonyMessage, 'text')) {
-                $symfonyMessage->text($newTextBody);
             }
         }
     }
